@@ -1,13 +1,29 @@
-# decoy
+# Decoy
 
-In-browser WebRTC stream virtualization and camera transition controller for Google Meet and Zoom Web.
+<!--toc:start-->
+- [The Problem](#the-problem)
+- [How It Works](#how-it-works)
+- [Installation & Quick Start](#installation-%26-quick-start)
+- [Usage Guide](#usage-guide)
+- [System Architecture](#system-architecture)
+- [Technical Comparison](#technical-comparison)
+- [Project Structure](#project-structure)
+- [Development](#development)
+- [License](#license)
+<!--toc:end-->
 
-[![GitHub stars](https://img.shields.io/github/stars/your-username/decoy?style=social)](https://github.com/your-username/decoy)
+In-browser WebRTC stream virtualization and camera transition controller for
+Google Meet and Zoom Web.
+
+[![GitHub stars](https://img.shields.io/github/stars/your-username/decoy?style=social)](https://github.com/SXsid/Decoy.git)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Manifest V3](https://img.shields.io/badge/manifest-v3-green.svg)](https://developer.chrome.com/docs/extensions/mv3/)
 [![WebRTC](https://img.shields.io/badge/webrtc-stream%20virtualization-orange.svg)](https://webrtc.org/)
 
-`decoy` intercepts client-side `getUserMedia` streams and routes them through an offscreen canvas pipeline. This enables video looping, freezing, and posture-aligned cross-fading without kernel drivers, desktop background applications, or OS-level capture permissions.
+`decoy` intercepts client-side `getUserMedia` streams and routes them through an
+offscreen canvas pipeline. This enables video looping, freezing, and
+posture-aligned cross-fading without kernel drivers, desktop background
+applications, or OS-level capture permissions.
 
 ---
 
@@ -15,7 +31,7 @@ In-browser WebRTC stream virtualization and camera transition controller for Goo
 
 If you find this project useful, please consider giving it a star on GitHub:
 
-[![Star on GitHub](https://img.shields.io/badge/Star%20on%20GitHub-decoy-yellow?style=for-the-badge&logo=github)](https://github.com/your-username/decoy)
+[![Star on GitHub](https://img.shields.io/badge/Star%20on%20GitHub-decoy-yellow?style=for-the-badge&logo=github)](https://@github.com/SXsid/Decoy.git)
 
 ---
 
@@ -44,6 +60,7 @@ flowchart TD
 ## The Problem
 
 Traditional virtual webcam tools (such as OBS Virtual Camera or `v4l2loopback`) operate at the OS driver level. They require:
+
 - Kernel module compilation or system-wide software installation.
 - Administrative/root permissions.
 - Explicit display capture handling.
@@ -84,7 +101,7 @@ graph LR
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/decoy.git
+git clone git@github.com:SXsid/Decoy.git
 cd decoy
 ```
 
@@ -92,9 +109,11 @@ cd decoy
 
 1. Open **Google Chrome**, **Brave**, **Edge**, or **Arc**.
 2. Navigate to the extensions page:
-   ```
+
+   ```text
    chrome://extensions/
    ```
+
 3. Enable **Developer mode** via the toggle in the top-right corner.
 4. Click **Load unpacked** in the top-left toolbar.
 5. Select the `decoy` repository folder.
@@ -124,7 +143,7 @@ cd decoy
 
 ## System Architecture
 
-```
+```text
 +-----------------------------------------------------------------------+
 |                         Main Page Context                             |
 |                                                                       |
@@ -169,28 +188,31 @@ cd decoy
 ## Troubleshooting & FAQ
 
 ### Why does the HUD not appear on some websites?
+
 Ensure the website requests the camera using `navigator.mediaDevices.getUserMedia({ video: true })`. Decoy activates when a video stream is requested.
 
 ### Is the HUD or Ghost Overlay visible to other meeting participants?
+
 No. Decoy only sends raw pixels drawn to the offscreen `<canvas>` through `canvas.captureStream()`. The HUD, buttons, and ghost overlays exist purely in the webpage DOM, which the WebRTC stream cannot see.
 
 ### Does Decoy interfere with Content Security Policies (CSP)?
+
 No. Decoy uses origin-safe DOM `CustomEvents` for IPC between the isolated content script and the page execution context, avoiding inline script evaluation.
 
 ---
 
 ## Project Structure
 
-```
+```text
 decoy/
-├── manifest.json        # Extension Manifest V3 configuration
-├── draggable.js         # Viewport-bounded pointer dragging logic
-├── ui-builder.js        # DOM layout definition and element reference factory
-├── content.js           # Content script orchestrator and IPC bridge
-├── canvas-renderer.js   # Dual-canvas rendering routines and alpha-blending
-├── inject.js            # getUserMedia hook, WebRTC pipeline, and FSM
-├── styles.css           # HUD panel layout and transitions
-└── index.html           # Documentation page and embed placeholder
+├── manifest.json        
+├── draggable.js         
+├── ui-builder.js        
+├── content.js           
+├── canvas-renderer.js   
+├── inject.js            
+├── styles.css           
+└── index.html          
 ```
 
 ---
@@ -199,7 +221,7 @@ decoy/
 
 ```bash
 # Clone repository
-git clone https://github.com/your-username/decoy.git
+git clone git@github.com:SXsid/Decoy.git
 
 # Serve documentation page locally
 python3 -m http.server 8080
