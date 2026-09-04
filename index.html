@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en" class="dark scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Decoy — Invisible Webcam Looping for Video Meetings</title>
+  <link rel="icon" type="image/png" href="./icons/icon32.png">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              accent: '#00f2fe',
+              emerald: '#10b981'
+            }
+          },
+          fontFamily: {
+            sans: ['Manrope', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+            mono: ['JetBrains Mono', 'Fira Code', 'monospace']
+          },
+          animation: {
+            'shimmer': 'shimmer 2.5s linear infinite',
+            'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+          },
+          keyframes: {
+            shimmer: {
+              from: { backgroundPosition: '0 0' },
+              to: { backgroundPosition: '-200% 0' }
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts: Manrope & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <style>
+    /* Dot Matrix Pattern for Light & Dark */
+    .dot-pattern {
+      background-image: radial-gradient(rgba(0, 0, 0, 0.08) 1px, transparent 1px);
+      background-size: 24px 24px;
+      mask-image: radial-gradient(ellipse 60% 50% at 50% 0%, #000 70%, transparent 100%);
+      -webkit-mask-image: radial-gradient(ellipse 60% 50% at 50% 0%, #000 70%, transparent 100%);
+    }
+    .dark .dot-pattern {
+      background-image: radial-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px);
+    }
+
+    /* Overhead Spotlight Glow */
+    .spotlight-glow {
+      background: radial-gradient(circle at 50% -20%, rgba(0, 0, 0, 0.05), transparent 70%);
+    }
+    .dark .spotlight-glow {
+      background: radial-gradient(circle at 50% -20%, rgba(255, 255, 255, 0.12), rgba(0, 242, 254, 0.04) 40%, transparent 70%);
+    }
+
+    /* Shimmer Button */
+    .btn-shimmer {
+      background: linear-gradient(110deg, #f4f4f5 45%, #e4e4e7 55%, #f4f4f5);
+      background-size: 200% 100%;
+    }
+    .dark .btn-shimmer {
+      background: linear-gradient(110deg, #18181b 45%, #27272a 55%, #18181b);
+      background-size: 200% 100%;
+    }
+
+    /* Bento Card Hover */
+    .bento-card {
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .bento-card:hover {
+      transform: translateY(-2px);
+    }
+
+    /* Live / Loop cross-fade demo mockup */
+    @keyframes fade-live { 0%, 40% { opacity: 1; } 50%, 90% { opacity: 0; } 100% { opacity: 1; } }
+    @keyframes fade-loop { 0%, 40% { opacity: 0; } 50%, 90% { opacity: 1; } 100% { opacity: 0; } }
+    .frame-live { animation: fade-live 6s ease-in-out infinite; }
+    .frame-loop { animation: fade-loop 6s ease-in-out infinite; }
+  </style>
+</head>
+<body class="bg-zinc-50 dark:bg-[#09090b] text-zinc-900 dark:text-zinc-100 antialiased min-h-screen transition-colors duration-300 selection:bg-zinc-900 selection:text-white dark:selection:bg-white dark:selection:text-black">
+
+  <!-- ================= SPOTLIGHT & BACKGROUND GRID ================= -->
+  <div class="fixed inset-0 pointer-events-none z-0">
+    <div class="absolute inset-0 dot-pattern opacity-70"></div>
+    <div class="absolute inset-0 spotlight-glow"></div>
+  </div>
+
+  <!-- ================= NAVBAR (shadcn style) ================= -->
+  <header class="sticky top-0 z-50 w-full border-b border-zinc-200 dark:border-zinc-800/60 bg-zinc-50/80 dark:bg-[#09090b]/80 backdrop-blur-xl transition-colors duration-300">
+    <div class="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+      
+      <!-- Brand & Extension Logo -->
+      <div class="flex items-center gap-3">
+        <img
+          src="icon128.png"
+          alt="Decoy Logo"
+          class="w-7 h-7 rounded-lg object-cover border border-zinc-200 dark:border-zinc-800 shadow-sm"
+        />
+        <span class="font-semibold text-sm tracking-tight text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+          Decoy <span class="text-[10px] font-mono font-normal px-2 py-0.5 rounded-full bg-zinc-200/80 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-300 dark:border-zinc-700">v1.0</span>
+        </span>
+      </div>
+
+      <!-- Links -->
+      <nav class="hidden md:flex items-center gap-6 text-xs font-medium text-zinc-600 dark:text-zinc-400">
+        <a href="#demo" class="hover:text-zinc-900 dark:hover:text-white transition-colors">Demo</a>
+        <a href="#install" class="hover:text-zinc-900 dark:hover:text-white transition-colors">Install</a>
+      </nav>
+
+      <!-- Theme Switcher & GitHub -->
+      <div class="flex items-center gap-2.5">
+        
+        <!-- Light / Dark Theme Switcher Button -->
+        <button 
+          id="theme-toggle" 
+          type="button" 
+          aria-label="Toggle theme" 
+          class="p-2 rounded-lg bg-zinc-200/70 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 border border-zinc-300/80 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 transition-all focus:outline-none"
+        >
+          <!-- Moon Icon (shown in light mode) -->
+          <svg id="theme-toggle-dark-icon" class="hidden w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
+          </svg>
+          <!-- Sun Icon (shown in dark mode) -->
+          <svg id="theme-toggle-light-icon" class="hidden w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path>
+          </svg>
+        </button>
+
+        <!-- Star on GitHub Link -->
+        <a href="https://github.com" target="_blank" rel="noreferrer" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-200/70 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 border border-zinc-300/80 dark:border-zinc-800 text-xs font-medium text-zinc-800 dark:text-zinc-200 transition-all">
+          <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+          </svg>
+          <span class="hidden sm:inline">Star on GitHub</span>
+          <svg class="hidden sm:block w-3 h-3 fill-current text-amber-400" viewBox="0 0 24 24">
+            <path d="M12 2l2.9 6.6 7.1.6-5.4 4.7 1.6 7-6.2-3.8-6.2 3.8 1.6-7L2 9.2l7.1-.6z"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= HERO ================= -->
+  <main class="relative z-10">
+    <section class="pt-20 pb-12 px-6 text-center max-w-4xl mx-auto">
+      
+      <!-- Aceternity Shimmering Badge -->
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full btn-shimmer animate-shimmer border border-zinc-300 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-mono mb-8 shadow-sm">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+        Zero OS Drivers • 100% In-Browser WebRTC Virtualization
+      </div>
+
+      <!-- Hero Title -->
+      <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-100 leading-[1.1] max-w-3xl mx-auto">
+        Your digital twin for <br />
+        <span class="bg-clip-text text-transparent bg-gradient-to-b from-zinc-800 to-zinc-500 dark:from-white dark:via-zinc-200 dark:to-zinc-500">
+          video meeting calls.
+        </span>
+      </h1>
+
+      <p class="mt-6 text-base sm:text-lg text-zinc-600 dark:text-zinc-400 max-w-xl mx-auto font-normal leading-relaxed">
+        Record a live loop, leave your chair, and return with <strong>zero jump-cuts</strong> using ghost posture alignment and linear $\alpha$-blending.
+      </p>
+
+      <!-- Action Buttons -->
+      <div class="mt-8 flex items-center justify-center gap-3 text-xs font-medium">
+        <a href="#demo" class="px-5 py-2.5 rounded-lg bg-zinc-900 hover:bg-black text-white dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white font-semibold transition-all shadow-sm">
+          Watch Demo ↓
+        </a>
+        <a href="#install" class="px-5 py-2.5 rounded-lg bg-white hover:bg-zinc-100 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-300 dark:border-zinc-800 transition-all shadow-sm">
+          Install Extension
+        </a>
+      </div>
+    </section>
+
+
+    <!-- ================= YOUTUBE DEMO PLACEHOLDER ================= -->
+    <section id="demo" class="max-w-4xl mx-auto px-6 pb-20">
+      
+      <!-- Aceternity Outer Glowing Frame -->
+      <div class="relative p-[1px] rounded-2xl bg-gradient-to-b from-zinc-300 via-zinc-200 to-zinc-300 dark:from-zinc-700/80 dark:via-zinc-800/40 dark:to-zinc-900 shadow-xl shadow-zinc-950/5 dark:shadow-cyan-500/5 group">
+        
+        <div class="relative w-full aspect-video rounded-[15px] bg-zinc-100 dark:bg-[#0c0c0e] overflow-hidden flex flex-col items-center justify-center border border-zinc-200/80 dark:border-transparent">
+          
+
+            <iframe 
+              class="w-full h-full absolute inset-0 z-20"
+              src="https://www.youtube.com/embed/VCiqa14K5iQ?si=mwVIXAk15hCqfCVH&amp;start=3" 
+              title="Decoy Product Demo" 
+              frameborder="0" 
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+              allowfullscreen>
+            </iframe>
+<!-- <iframe width="560" height="315" src="https://www.youtube.com/embed/VCiqa14K5iQ?si=mwVIXAk15hCqfCVH&amp;start=3" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe> -->
+
+          <!-- Live / Loop Cross-Fade Mockup -->
+          <!-- <div class="relative w-[260px] h-[170px] z-10 select-none"> -->
+          <!--   <div class="frame-live absolute inset-0 rounded-[10px] border border-zinc-300 dark:border-zinc-700 bg-gradient-to-br from-white to-zinc-100 dark:from-[#1a1a1c] dark:to-[#0f0f11] flex flex-col items-center justify-center gap-2.5"> -->
+          <!--     <svg class="w-9 h-9 text-[#0091a8] dark:text-[#00e5ff]" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"> -->
+          <!--       <rect x="3" y="7" width="14" height="11" rx="2"/><circle cx="10" cy="12.5" r="3"/><path d="M17 10l4-2v8l-4-2z"/> -->
+          <!--     </svg> -->
+          <!--     <span class="font-mono text-[10px] tracking-widest text-[#0091a8] dark:text-[#00e5ff] flex items-center gap-1.5"> -->
+          <!--       <span class="w-1.5 h-1.5 rounded-full bg-[#0091a8] dark:bg-[#00e5ff]"></span>LIVE FEED -->
+          <!--     </span> -->
+          <!--   </div> -->
+          <!--   <div class="frame-loop absolute inset-0 rounded-[10px] border border-orange-900/40 bg-gradient-to-br from-orange-50 to-white dark:from-[#1c150d] dark:to-[#110d09] flex flex-col items-center justify-center gap-2.5"> -->
+          <!--     <svg class="w-9 h-9 text-orange-600 dark:text-[#ff9100]" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"> -->
+          <!--       <path d="M3 12a9 9 0 1 1 3 6.7"/><path d="M3 16v-4h4"/> -->
+          <!--     </svg> -->
+          <!--     <span class="font-mono text-[10px] tracking-widest text-orange-600 dark:text-[#ff9100] flex items-center gap-1.5"> -->
+          <!--       <span class="w-1.5 h-1.5 rounded-full bg-orange-600 dark:bg-[#ff9100]"></span>LOOP RECORDING -->
+          <!--     </span> -->
+          <!--   </div> -->
+          <!-- </div> -->
+          <p class="absolute bottom-4 text-xs text-zinc-500 font-mono z-10">Paste your YouTube embed link in index.html to replace this preview</p>
+
+          <!-- Subtle Background Grid inside Video Box -->
+          <div class="absolute inset-0 bg-[radial-gradient(#a1a1aa_1px,transparent_1px)] dark:bg-[radial-gradient(#27272a_1px,transparent_1px)] [background-size:16px_16px] opacity-20 pointer-events-none"></div>
+        </div>
+
+      </div>
+
+      <!-- Caption bar -->
+      <div class="flex items-center justify-between text-[11px] font-mono text-zinc-500 mt-3 px-2">
+        <span>WebRTC Stream Virtualization</span>
+        <span>Zero OS Drivers • 100% In-Browser</span>
+      </div>
+    </section>
+
+
+    <!-- ================= INSTALLATION (shadcn style code card) ================= -->
+    <section id="install" class="max-w-4xl mx-auto px-6 py-16 border-t border-zinc-200 dark:border-zinc-800/60">
+      <div class="mb-8">
+        <span class="text-xs font-mono text-zinc-500 uppercase tracking-wider">Get Started</span>
+        <h2 class="text-2xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight mt-1">Load Extension in 3 Steps</h2>
+      </div>
+
+      <div class="space-y-3 font-mono text-xs text-zinc-600 dark:text-zinc-400">
+        
+        <div class="p-4 rounded-xl bg-white dark:bg-[#121215] border border-zinc-200 dark:border-zinc-800 flex items-start gap-4 shadow-sm dark:shadow-none">
+          <span class="w-6 h-6 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 flex items-center justify-center font-bold">1</span>
+          <div>
+            <strong class="text-zinc-900 dark:text-zinc-200">Open Extension Settings:</strong> Navigate to <code class="text-zinc-800 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800/80 px-1.5 py-0.5 rounded">chrome://extensions/</code> in Chrome or Brave and enable <strong>Developer mode</strong> (top-right toggle).
+          </div>
+        </div>
+
+        <div class="p-4 rounded-xl bg-white dark:bg-[#121215] border border-zinc-200 dark:border-zinc-800 flex items-start gap-4 shadow-sm dark:shadow-none">
+          <span class="w-6 h-6 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 flex items-center justify-center font-bold">2</span>
+          <div>
+            <strong class="text-zinc-900 dark:text-zinc-200">Load Unpacked:</strong> Click <strong>Load unpacked</strong> and select the extension's project folder.
+          </div>
+        </div>
+
+        <div class="p-4 rounded-xl bg-white dark:bg-[#121215] border border-zinc-200 dark:border-zinc-800 flex items-start gap-4 shadow-sm dark:shadow-none">
+          <span class="w-6 h-6 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 flex items-center justify-center font-bold">3</span>
+          <div>
+            <strong class="text-zinc-900 dark:text-zinc-200">Start Meeting:</strong> Open Google Meet or Zoom Web. The <strong>Decoy</strong> floating widget will automatically appear in your call.
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <!-- ================= FOOTER ================= -->
+  <footer class="border-t border-zinc-200 dark:border-zinc-800/60 py-8 text-center text-xs text-zinc-500 relative z-10">
+    <div class="max-w-5xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-2">
+        <img
+          src="icon128.png"
+          alt="Decoy"
+          class="w-4 h-4 rounded object-cover"
+        />
+        <span class="font-medium text-zinc-800 dark:text-zinc-300">Decoy</span>
+        <span>— Minimalist WebRTC Virtualization</span>
+      </div>
+
+      <div class="flex items-center gap-6">
+        <a href="https://github.com" target="_blank" class="hover:text-zinc-900 dark:hover:text-zinc-300 transition-colors">GitHub</a>
+        <a href="#install" class="hover:text-zinc-900 dark:hover:text-zinc-300 transition-colors">Install</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    (function() {
+      const themeToggleBtn = document.getElementById('theme-toggle');
+      const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
+      const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
+
+      // Sync initial state with localStorage or system preference
+      const isDark = localStorage.getItem('color-theme') === 'dark' || 
+        (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+      if (isDark) {
+        document.documentElement.classList.add('dark');
+        themeToggleLightIcon.classList.remove('hidden');
+      } else {
+        document.documentElement.classList.remove('dark');
+        themeToggleDarkIcon.classList.remove('hidden');
+      }
+
+      // Handle toggle click
+      themeToggleBtn.addEventListener('click', function() {
+        themeToggleDarkIcon.classList.toggle('hidden');
+        themeToggleLightIcon.classList.toggle('hidden');
+
+        if (document.documentElement.classList.contains('dark')) {
+          document.documentElement.classList.remove('dark');
+          localStorage.setItem('color-theme', 'light');
+        } else {
+          document.documentElement.classList.add('dark');
+          localStorage.setItem('color-theme', 'dark');
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
